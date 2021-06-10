@@ -20,6 +20,9 @@ local buttonTimer
 
 function drawMenu()
 	gfx.clear(gfx.kColorWhite)
+	if #files <= 0 then
+		gfx.drawText("No files found\n\nPut txt-files in Data/net.diefonk.Reader/\nto start reading", 5, 5)
+	end
 	for index = 1, #files do
 		local fileName = files[index]:sub(1, #files[index] - #".txt")
 		if index == selectedFile then
