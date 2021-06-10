@@ -21,11 +21,9 @@ local buttonTimer
 function drawMenu()
 	gfx.clear(gfx.kColorWhite)
 	for index = 1, #files do
-		local fileName
+		local fileName = files[index]:sub(1, #files[index] - #".txt")
 		if index == selectedFile then
-			fileName = "*" .. files[index]:sub(1, #files[index] - #".txt") .. "*"
-		else
-			fileName = files[index]:sub(1, #files[index] - #".txt")
+			fileName = "*" .. fileName .. "*"
 		end
 		gfx.drawText(fileName, 5, middle + (fontHeight * 2) * (index - selectedFile))
 	end
@@ -34,8 +32,8 @@ end
 function init()
 	local fontPaths = {
 		[gfx.font.kVariantNormal] = "Sasser-Slab",
-    	[gfx.font.kVariantBold] = "Sasser-Slab-Bold",
-    	[gfx.font.kVariantItalic] = "Sasser-Slab-Italic"
+		[gfx.font.kVariantBold] = "Sasser-Slab-Bold",
+		[gfx.font.kVariantItalic] = "Sasser-Slab-Italic"
 	}
 	local fontFamily = gfx.font.newFamily(fontPaths)
 	gfx.setFontFamily(fontFamily)
@@ -52,10 +50,10 @@ function init()
 		bookmarks = {}
 	end
 
-	local filesList = playdate.file.listFiles("/")
-	for index = 1, #filesList do
-		if filesList[index]:sub(-#".txt") == ".txt" then
-			table.insert(files, filesList[index])
+	local allFiles = playdate.file.listFiles("/")
+	for index = 1, #allFiles do
+		if allFiles[index]:sub(-#".txt") == ".txt" and allFiles[index]:sub(1, 1) ~= "." then
+			table.insert(files, allFiles[index])
 		end
 	end
 	drawMenu()
@@ -66,6 +64,9 @@ function playdate.update()
 end
 
 function scroll(change)
+	if imageHeight < 240 then
+		return
+	end
 	imagePosition -= change
 	if imagePosition > 0 then
 		imagePosition = 0
@@ -82,8 +83,12 @@ function playdate.cranked(change)
 end
 
 function playdate.upButtonDown()
-	if state == menu and selectedFile > 1 then
-		selectedFile -= 1
+	if state == menu then
+		if selectedFile > 1 then
+			selectedFile -= 1
+		else
+			selectedFile = #files
+		end
 		drawMenu()
 	elseif state == reading then
 		if buttonTimer then
@@ -94,8 +99,12 @@ function playdate.upButtonDown()
 end
 
 function playdate.downButtonDown()
-	if state == menu and selectedFile < #files then
-		selectedFile += 1
+	if state == menu then
+		if selectedFile < #files then
+			selectedFile += 1
+		else
+			selectedFile = 1
+		end
 		drawMenu()
 	elseif state == reading then
 		if buttonTimer then
@@ -119,8 +128,43 @@ end
 
 function playdate.AButtonUp()
 	if state == menu then
+		gfx.clear(gfx.kColorWhite)
+		gfx.drawText("_Loading..._", 5, middle)
+		playdate.display.flush()
 		local file = playdate.file.open(files[selectedFile])
-		local text = file:read(300000)
+		local text = file:read(1000000)
+
+		text = text:gsub("\xe2\x80\x90", "-")
+		text = text:gsub("\xe2\x80\x91", "-")
+		text = text:gsub("\xe2\x80\x92", "-")
+		text = text:gsub("\xe2\x80\x93", "-")
+		text = text:gsub("\xe2\x80\x94", "-")
+		text = text:gsub("\xe2\x80\x95", "-")
+		text = text:gsub("\xe2\x80\x9c", "\"")
+		text = text:gsub("\xe2\x80\x9d", "\"")
+		text = text:gsub("\xe2\x80\x9e", "\"")
+		text = text:gsub("\xe2\x80\x9f", "\"")
+		text = text:gsub("\xe2\x9d\x9d", "\"")
+		text = text:gsub("\xe2\x9d\x9e", "\"")
+		text = text:gsub("\xc2\xab", "\"")
+		text = text:gsub("\xc2\xbb", "\"")
+		text = text:gsub("\xe2\xb9\x82", "\"")
+		text = text:gsub("\xe3\x80\x9d", "\"")
+		text = text:gsub("\xe3\x80\x9e", "\"")
+		text = text:gsub("\xe3\x80\x9f", "\"")
+		text = text:gsub("\xef\xbc\x82", "\"")
+		text = text:gsub("\xe2\x80\x98", "'")
+		text = text:gsub("\xe2\x80\x99", "'")
+		text = text:gsub("\xe2\x80\x9a", "'")
+		text = text:gsub("\xe2\x80\x9b", "'")
+		text = text:gsub("\xe2\x80\xb9", "'")
+		text = text:gsub("\xe2\x80\xba", "'")
+		text = text:gsub("\xe2\x9d\x9b", "'")
+		text = text:gsub("\xe2\x9d\x9c", "'")
+		text = text:gsub("\xe2\x9d\x9f", "'")
+		text = text:gsub("\xe2\x9d\xae", "'")
+		text = text:gsub("\xe2\x9d\xaf", "'")
+
 		local width, height = gfx.getTextSizeForMaxWidth(text, 390)
 		imageHeight = height + 10
 		image = gfx.image.new(400, imageHeight, gfx.kColorWhite)
@@ -132,6 +176,7 @@ function playdate.AButtonUp()
 		else
 			imagePosition = 0
 		end
+		gfx.clear(gfx.kColorWhite)
 		image:draw(0, imagePosition)
 		state = reading
 	end
