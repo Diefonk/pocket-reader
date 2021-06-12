@@ -1,8 +1,6 @@
 import "CoreLibs/graphics"
-import "CoreLibs/timer"
 
 local gfx <const> = playdate.graphics
-local tmr <const> = playdate.timer
 
 local menu <const> = 1
 local reading <const> = 2
@@ -16,7 +14,6 @@ local middle
 local image
 local imagePosition
 local imageHeight
-local buttonTimer
 
 function drawMenu()
 	gfx.clear(gfx.kColorWhite)
@@ -62,10 +59,6 @@ function init()
 	drawMenu()
 end
 
-function playdate.update()
-	tmr.updateTimers()
-end
-
 function scroll(change)
 	if imageHeight < 240 then
 		return
@@ -77,6 +70,16 @@ function scroll(change)
 		imagePosition = 240 - imageHeight
 	end
 	image:draw(0, imagePosition)
+end
+
+function playdate.update()
+	if state == reading then
+		if playdate.buttonIsPressed("up") then
+			scroll(-100 / playdate.display.getRefreshRate())
+		elseif playdate.buttonIsPressed("down") then
+			scroll(100 / playdate.display.getRefreshRate())
+		end
+	end
 end
 
 function playdate.cranked(change)
@@ -93,11 +96,6 @@ function playdate.upButtonDown()
 			selectedFile = #files
 		end
 		drawMenu()
-	elseif state == reading then
-		if buttonTimer then
-			buttonTimer:remove()
-		end
-		buttonTimer = tmr.keyRepeatTimerWithDelay(1, 1, scroll, -3)
 	end
 end
 
@@ -109,23 +107,6 @@ function playdate.downButtonDown()
 			selectedFile = 1
 		end
 		drawMenu()
-	elseif state == reading then
-		if buttonTimer then
-			buttonTimer:remove()
-		end
-		buttonTimer = tmr.keyRepeatTimerWithDelay(1, 1, scroll, 3)
-	end
-end
-
-function playdate.upButtonUp()
-	if buttonTimer then
-		buttonTimer:remove()
-	end
-end
-
-function playdate.downButtonUp()
-	if buttonTimer then
-		buttonTimer:remove()
 	end
 end
 
@@ -193,6 +174,10 @@ function saveBookmark()
 end
 
 function playdate.gameWillTerminate()
+	saveBookmark()
+end
+
+function playdate.deviceWillSleep()
 	saveBookmark()
 end
 
