@@ -1,6 +1,7 @@
 import "CoreLibs/graphics"
 
-local gfx <const> = playdate.graphics
+local pd <const> = playdate
+local gfx <const> = pd.graphics
 
 local menu <const> = 1
 local reading <const> = 2
@@ -40,17 +41,17 @@ function init()
 	fontHeight = fontFamily[gfx.font.kVariantNormal]:getHeight()
 	middle = 120 - fontHeight / 2
 
-	playdate.getSystemMenu():addMenuItem("reader menu", function()
+	pd.getSystemMenu():addMenuItem("reader menu", function()
 		state = menu
 		drawMenu()
 	end)
 
-	bookmarks = playdate.datastore.read("bookmarks")
+	bookmarks = pd.datastore.read("bookmarks")
 	if not bookmarks then
 		bookmarks = {}
 	end
 
-	local allFiles = playdate.file.listFiles("/")
+	local allFiles = pd.file.listFiles("/")
 	for index = 1, #allFiles do
 		if allFiles[index]:sub(-#".txt") == ".txt" and allFiles[index]:sub(1, 1) ~= "." then
 			table.insert(files, allFiles[index])
@@ -72,23 +73,23 @@ function scroll(change)
 	image:draw(0, imagePosition)
 end
 
-function playdate.update()
+function pd.update()
 	if state == reading then
-		if playdate.buttonIsPressed("up") then
-			scroll(-100 / playdate.display.getRefreshRate())
-		elseif playdate.buttonIsPressed("down") then
-			scroll(100 / playdate.display.getRefreshRate())
+		if pd.buttonIsPressed("up") then
+			scroll(-100 / pd.display.getRefreshRate())
+		elseif pd.buttonIsPressed("down") then
+			scroll(100 / pd.display.getRefreshRate())
 		end
 	end
 end
 
-function playdate.cranked(change)
+function pd.cranked(change)
 	if state == reading then
 		scroll(change * 2)
 	end
 end
 
-function playdate.upButtonDown()
+function pd.upButtonDown()
 	if state == menu then
 		if selectedFile > 1 then
 			selectedFile -= 1
@@ -99,7 +100,7 @@ function playdate.upButtonDown()
 	end
 end
 
-function playdate.downButtonDown()
+function pd.downButtonDown()
 	if state == menu then
 		if selectedFile < #files then
 			selectedFile += 1
@@ -110,12 +111,12 @@ function playdate.downButtonDown()
 	end
 end
 
-function playdate.AButtonUp()
+function pd.AButtonUp()
 	if state == menu then
 		gfx.clear(gfx.kColorWhite)
 		gfx.drawText("_Loading..._", 5, middle)
-		playdate.display.flush()
-		local file = playdate.file.open(files[selectedFile])
+		pd.display.flush()
+		local file = pd.file.open(files[selectedFile])
 		local text = file:read(1000000)
 
 		text = text:gsub("\xe2\x80\x90", "-")
@@ -169,23 +170,23 @@ end
 function saveBookmark()
 	if state == reading then
 		bookmarks[files[selectedFile]] = imagePosition
-		playdate.datastore.write(bookmarks, "bookmarks")
+		pd.datastore.write(bookmarks, "bookmarks")
 	end
 end
 
-function playdate.gameWillTerminate()
+function pd.gameWillTerminate()
 	saveBookmark()
 end
 
-function playdate.deviceWillSleep()
+function pd.deviceWillSleep()
 	saveBookmark()
 end
 
-function playdate.deviceWillLock()
+function pd.deviceWillLock()
 	saveBookmark()
 end
 
-function playdate.gameWillPause()
+function pd.gameWillPause()
 	saveBookmark()
 end
 
