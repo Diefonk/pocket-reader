@@ -65,7 +65,7 @@ end
 
 function drawText()
 	gfx.clear(gfx.kColorWhite)
-	local endIndex = textIndex + 10
+	local endIndex = textIndex + 11
 	if #text < endIndex then
 		endIndex = #text
 	end
@@ -78,14 +78,14 @@ function scroll(change)
 	textPosition -= change
 	while textPosition < 0 - fontHeight and textIndex < #text - 8 do
 		textIndex += 1
-		textPosition += fontHeight
+		textPosition += fontHeight + 5
 	end
 	if textPosition < 0 and textIndex > #text - 9 then
 		textPosition = 0
 	end
 	while textPosition > 0 and textIndex > 1 do
 		textIndex -= 1
-		textPosition -=  fontHeight
+		textPosition -=  fontHeight + 5
 	end
 	if textPosition > 0 and textIndex == 1 then
 		textPosition = 0
