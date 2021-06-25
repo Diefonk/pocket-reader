@@ -5,6 +5,7 @@ local gfx <const> = pd.graphics
 
 local menu <const> = 1
 local reading <const> = 2
+local loading <const> = 3
 
 local state = menu
 local bookmarks
@@ -12,9 +13,9 @@ local files = {}
 local selectedFile = 1
 local fontHeight
 local middle
-local image
-local imagePosition
-local imageHeight
+local text
+local textIndex
+local textPosition
 
 function drawMenu()
 	gfx.clear(gfx.kColorWhite)
@@ -55,22 +56,41 @@ function init()
 	for index = 1, #allFiles do
 		if allFiles[index]:sub(-#".txt") == ".txt" and allFiles[index]:sub(1, 1) ~= "." then
 			table.insert(files, allFiles[index])
+		elseif allFiles[index]:sub(-#".txt.json") == ".txt.json" and not pd.file.exists(allFiles[index]:sub(1, #allFiles[index] - #".json")) then
+			table.insert(files, allFiles[index]:sub(1, #allFiles[index] - #".json"))
 		end
 	end
 	drawMenu()
 end
 
+function drawText()
+	gfx.clear(gfx.kColorWhite)
+	local endIndex = textIndex + 10
+	if #text < endIndex then
+		endIndex = #text
+	end
+	for index = textIndex, endIndex do
+		gfx.drawText(text[index], 5, textPosition + 5 + (fontHeight + 5) * (index - textIndex))
+	end
+end
+
 function scroll(change)
-	if imageHeight < 240 then
-		return
+	textPosition -= change
+	while textPosition < 0 - fontHeight and textIndex < #text - 8 do
+		textIndex += 1
+		textPosition += fontHeight
 	end
-	imagePosition -= change
-	if imagePosition > 0 then
-		imagePosition = 0
-	elseif imagePosition < 240 - imageHeight then
-		imagePosition = 240 - imageHeight
+	if textPosition < 0 and textIndex > #text - 9 then
+		textPosition = 0
 	end
-	image:draw(0, imagePosition)
+	while textPosition > 0 and textIndex > 1 do
+		textIndex -= 1
+		textPosition -=  fontHeight
+	end
+	if textPosition > 0 and textIndex == 1 then
+		textPosition = 0
+	end
+	drawText()
 end
 
 function pd.update()
@@ -80,6 +100,107 @@ function pd.update()
 		elseif pd.buttonIsPressed("down") then
 			scroll(100 / pd.display.getRefreshRate())
 		end
+	elseif state == loading then
+		if pd.file.exists(files[selectedFile] .. ".json") then
+			text = pd.datastore.read(files[selectedFile])
+			if bookmarks[files[selectedFile]] then
+				textIndex = bookmarks[files[selectedFile]]
+			else
+				textIndex = 1
+			end
+			textPosition = 0
+			drawText()
+			state = reading
+			return
+		end
+
+		pd.setAutoLockDisabled(true)
+		local file = pd.file.open(files[selectedFile])
+		text = {}
+		while true do
+			local line = file:readline()
+			if not line then
+				break
+			end
+			line = line:gsub("\xe2\x80\x90", "-")
+			line = line:gsub("\xe2\x80\x91", "-")
+			line = line:gsub("\xe2\x80\x92", "-")
+			line = line:gsub("\xe2\x80\x93", "-")
+			line = line:gsub("\xe2\x80\x94", "-")
+			line = line:gsub("\xe2\x80\x95", "-")
+			line = line:gsub("\xe2\x80\x9c", "\"")
+			line = line:gsub("\xe2\x80\x9d", "\"")
+			line = line:gsub("\xe2\x80\x9e", "\"")
+			line = line:gsub("\xe2\x80\x9f", "\"")
+			line = line:gsub("\xe2\x9d\x9d", "\"")
+			line = line:gsub("\xe2\x9d\x9e", "\"")
+			line = line:gsub("\xc2\xab", "\"")
+			line = line:gsub("\xc2\xbb", "\"")
+			line = line:gsub("\xe2\xb9\x82", "\"")
+			line = line:gsub("\xe3\x80\x9d", "\"")
+			line = line:gsub("\xe3\x80\x9e", "\"")
+			line = line:gsub("\xe3\x80\x9f", "\"")
+			line = line:gsub("\xef\xbc\x82", "\"")
+			line = line:gsub("\xe2\x80\x98", "'")
+			line = line:gsub("\xe2\x80\x99", "'")
+			line = line:gsub("\xe2\x80\x9a", "'")
+			line = line:gsub("\xe2\x80\x9b", "'")
+			line = line:gsub("\xe2\x80\xb9", "'")
+			line = line:gsub("\xe2\x80\xba", "'")
+			line = line:gsub("\xe2\x9d\x9b", "'")
+			line = line:gsub("\xe2\x9d\x9c", "'")
+			line = line:gsub("\xe2\x9d\x9f", "'")
+			line = line:gsub("\xe2\x9d\xae", "'")
+			line = line:gsub("\xe2\x9d\xaf", "'")
+			table.insert(text, line)
+			gfx.clear(gfx.kColorWhite)
+			gfx.drawText("Loading... " .. #text .. " lines read", 5, middle)
+			coroutine.yield()
+		end
+		file:close()
+
+		local index = 1
+		while index <= #text do
+			if gfx.getFont():getTextWidth(text[index]) > 390 then
+				local line = text[index]
+				for index2 = 1, #line do
+					if gfx.getFont():getTextWidth(line:sub(1, index2)) > 390 then
+						local spaceIndex = index2
+						while spaceIndex > 1 do
+							if line:sub(spaceIndex, spaceIndex) == " " then
+								break
+							end
+							spaceIndex -= 1
+						end
+						if spaceIndex > 1 then
+							text[index] = line:sub(1, spaceIndex - 1)
+							table.insert(text, index + 1, line:sub(spaceIndex + 1))
+						else
+							text[index] = line:sub(1, index2 - 1)
+							table.insert(text, index + 1, line:sub(index2))
+						end
+						break
+					end
+				end
+			end
+			local percentage = "" .. 100 * index / #text
+			percentage = percentage:sub(1, 4) .. "% processed"
+			gfx.clear(gfx.kColorWhite)
+			gfx.drawText("Loading... " .. percentage, 5, middle)
+			index += 1
+			coroutine.yield()
+		end
+		pd.datastore.write(text, files[selectedFile])
+
+		if bookmarks[files[selectedFile]] then
+			textIndex = bookmarks[files[selectedFile]]
+		else
+			textIndex = 1
+		end
+		textPosition = 0
+		drawText()
+		state = reading
+		pd.setAutoLockDisabled(false)
 	end
 end
 
@@ -114,62 +235,15 @@ end
 function pd.AButtonUp()
 	if state == menu then
 		gfx.clear(gfx.kColorWhite)
-		gfx.drawText("_Loading..._", 5, middle)
+		gfx.drawText("Loading...", 5, middle)
 		pd.display.flush()
-		local file = pd.file.open(files[selectedFile])
-		local text = file:read(1000000)
-
-		text = text:gsub("\xe2\x80\x90", "-")
-		text = text:gsub("\xe2\x80\x91", "-")
-		text = text:gsub("\xe2\x80\x92", "-")
-		text = text:gsub("\xe2\x80\x93", "-")
-		text = text:gsub("\xe2\x80\x94", "-")
-		text = text:gsub("\xe2\x80\x95", "-")
-		text = text:gsub("\xe2\x80\x9c", "\"")
-		text = text:gsub("\xe2\x80\x9d", "\"")
-		text = text:gsub("\xe2\x80\x9e", "\"")
-		text = text:gsub("\xe2\x80\x9f", "\"")
-		text = text:gsub("\xe2\x9d\x9d", "\"")
-		text = text:gsub("\xe2\x9d\x9e", "\"")
-		text = text:gsub("\xc2\xab", "\"")
-		text = text:gsub("\xc2\xbb", "\"")
-		text = text:gsub("\xe2\xb9\x82", "\"")
-		text = text:gsub("\xe3\x80\x9d", "\"")
-		text = text:gsub("\xe3\x80\x9e", "\"")
-		text = text:gsub("\xe3\x80\x9f", "\"")
-		text = text:gsub("\xef\xbc\x82", "\"")
-		text = text:gsub("\xe2\x80\x98", "'")
-		text = text:gsub("\xe2\x80\x99", "'")
-		text = text:gsub("\xe2\x80\x9a", "'")
-		text = text:gsub("\xe2\x80\x9b", "'")
-		text = text:gsub("\xe2\x80\xb9", "'")
-		text = text:gsub("\xe2\x80\xba", "'")
-		text = text:gsub("\xe2\x9d\x9b", "'")
-		text = text:gsub("\xe2\x9d\x9c", "'")
-		text = text:gsub("\xe2\x9d\x9f", "'")
-		text = text:gsub("\xe2\x9d\xae", "'")
-		text = text:gsub("\xe2\x9d\xaf", "'")
-
-		local width, height = gfx.getTextSizeForMaxWidth(text, 390)
-		imageHeight = height + 10
-		image = gfx.image.new(400, imageHeight, gfx.kColorWhite)
-		gfx.pushContext(image)
-		gfx.drawTextInRect(text, 5, 5, width, height)
-		gfx.popContext()
-		if bookmarks[files[selectedFile]] then
-			imagePosition = bookmarks[files[selectedFile]]
-		else
-			imagePosition = 0
-		end
-		gfx.clear(gfx.kColorWhite)
-		image:draw(0, imagePosition)
-		state = reading
+		state = loading
 	end
 end
 
 function saveBookmark()
 	if state == reading then
-		bookmarks[files[selectedFile]] = imagePosition
+		bookmarks[files[selectedFile]] = textIndex
 		pd.datastore.write(bookmarks, "bookmarks")
 	end
 end
