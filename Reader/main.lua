@@ -115,6 +115,7 @@ function pd.update()
 		end
 
 		pd.setAutoLockDisabled(true)
+		pd.display.setRefreshRate(0)
 		local file = pd.file.open(files[selectedFile])
 		text = {}
 		while true do
@@ -159,12 +160,13 @@ function pd.update()
 		end
 		file:close()
 
+		local font <const> = gfx.getFont()
 		local index = 1
 		while index <= #text do
-			if gfx.getFont():getTextWidth(text[index]) > 390 then
+			if font:getTextWidth(text[index]) > 390 then
 				local line = text[index]
 				for index2 = 1, #line do
-					if gfx.getFont():getTextWidth(line:sub(1, index2)) > 390 then
+					if font:getTextWidth(line:sub(1, index2)) > 390 then
 						local spaceIndex = index2
 						while spaceIndex > 1 do
 							if line:sub(spaceIndex, spaceIndex) == " " then
@@ -184,7 +186,7 @@ function pd.update()
 				end
 			end
 			local percentage = "" .. 100 * index / #text
-			percentage = percentage:sub(1, 4) .. "% processed"
+			percentage = percentage:sub(1, 5) .. "% processed"
 			gfx.clear(gfx.kColorWhite)
 			gfx.drawText("Loading... " .. percentage, 5, middle)
 			index += 1
@@ -201,6 +203,7 @@ function pd.update()
 		drawText()
 		state = reading
 		pd.setAutoLockDisabled(false)
+		pd.display.setRefreshRate(30)
 	end
 end
 
