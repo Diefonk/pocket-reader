@@ -26,16 +26,15 @@ function drawMenu()
 		gfx.drawText("No files found\n\nPut txt-files in Data/net.diefonk.Reader/\nto start reading", data.xMargin, data.yMargin)
 	end
 	for index = 1, #files do
-		local fileName = files[index].name:sub(1, #files[index].name - #".txt")
+		local fileName = files[index].menuName
 		if index == selectedFile then
-			fileName = "*" .. fileName .. "*"
-		end
-		fileName = fileName .. " "
-		if files[index].source then
-			fileName = fileName .. "[S]"
-		end
-		if files[index].loaded then
-			fileName = fileName .. "[L]"
+			fileName = "*" .. fileName .. "* "
+			if files[index].source then
+				fileName = fileName .. "[S]"
+			end
+			if files[index].loaded then
+				fileName = fileName .. "[L]"
+			end
 		end
 		gfx.drawText(fileName, data.xMargin, middle + (fontHeight + data.yMargin) * (index - selectedFile))
 	end
@@ -78,19 +77,26 @@ function init()
 
 	local allFiles = pd.file.listFiles("/")
 	for index = 1, #allFiles do
-		if allFiles[index]:sub(-#".txt") == ".txt" and allFiles[index]:sub(1, 1) ~= "." then
-			table.insert(files, { name = allFiles[index], source = true, loaded = false })
+		if allFiles[index]:sub(1, 1) == "." then
+			--nothing
+		elseif allFiles[index]:sub(-#".txt") == ".txt" then
+			table.insert(files, {
+				name = allFiles[index],
+				menuName = allFiles[index]:sub(1, -#".txt" - 1),
+				source = true,
+				loaded = false
+			})
 		elseif allFiles[index]:sub(-#".txt.json") == ".txt.json" then
-			local exists = false
-			local name = allFiles[index]:sub(1, #allFiles[index] - #".json")
-			for index2 = 1, #files do
-				if files[index2].name == name then
-					exists = true
-					files[index2].loaded = true
-				end
-			end
-			if not exists then
-				table.insert(files, { name = name, source = false, loaded = true })
+			local name = allFiles[index]:sub(1, -#".json" - 1)
+			if files[#files].name == name then
+				files[#files].loaded = true
+			else
+				table.insert(files, {
+					name = name,
+					menuName = name:sub(1, -#".txt" - 1),
+					source = false,
+					loaded = true
+				})
 			end
 		end
 	end
