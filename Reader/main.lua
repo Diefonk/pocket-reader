@@ -13,10 +13,10 @@ local files = {}
 local selectedFile = 1
 local fontHeight
 local middle
-local linesToDraw
 local text
 local textIndex
 local textPosition
+local linesToDraw
 local textEnd = {}
 local jumpIndex
 
@@ -111,6 +111,22 @@ function scroll(change)
 	drawText()
 end
 
+function startReading()
+	if data.bookmarks[files[selectedFile]] then
+		textIndex = data.bookmarks[files[selectedFile]]
+	else
+		textIndex = 1
+	end
+	jumpIndex = textIndex
+	textPosition = 0
+	textEnd.index = #text - textEnd.offset
+	if textEnd.index < 1 then
+		textEnd.index = 1
+	end
+	drawText()
+	state = reading
+end
+
 function pd.update()
 	if state == reading then
 		if pd.buttonIsPressed("up") then
@@ -121,19 +137,7 @@ function pd.update()
 	elseif state == loading then
 		if pd.file.exists(files[selectedFile] .. ".json") then
 			text = pd.datastore.read(files[selectedFile])
-			if data.bookmarks[files[selectedFile]] then
-				textIndex = data.bookmarks[files[selectedFile]]
-			else
-				textIndex = 1
-			end
-			jumpIndex = textIndex
-			textPosition = 0
-			textEnd.index = #text - textEnd.offset
-			if textEnd.index < 1 then
-				textEnd.index = 1
-			end
-			drawText()
-			state = reading
+			startReading()
 			return
 		end
 
@@ -218,19 +222,7 @@ function pd.update()
 		end
 		pd.datastore.write(text, files[selectedFile])
 
-		if data.bookmarks[files[selectedFile]] then
-			textIndex = data.bookmarks[files[selectedFile]]
-		else
-			textIndex = 1
-		end
-		jumpIndex = textIndex
-		textPosition = 0
-		textEnd.index = #text - textEnd.offset
-		if textEnd.index < 1 then
-			textEnd.index = 1
-		end
-		drawText()
-		state = reading
+		startReading()
 		pd.setAutoLockDisabled(false)
 		pd.display.setRefreshRate(30)
 	end
