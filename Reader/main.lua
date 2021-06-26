@@ -8,7 +8,7 @@ local reading <const> = 2
 local loading <const> = 3
 
 local state = menu
-local bookmarks
+local data
 local files = {}
 local selectedFile = 1
 local fontHeight
@@ -20,14 +20,14 @@ local textPosition
 function drawMenu()
 	gfx.clear(gfx.kColorWhite)
 	if #files <= 0 then
-		gfx.drawText("No files found\n\nPut txt-files in Data/net.diefonk.Reader/\nto start reading", 5, 5)
+		gfx.drawText("No files found\n\nPut txt-files in Data/net.diefonk.Reader/\nto start reading", data.xMargin, data.yMargin)
 	end
 	for index = 1, #files do
 		local fileName = files[index]:sub(1, #files[index] - #".txt")
 		if index == selectedFile then
 			fileName = "*" .. fileName .. "*"
 		end
-		gfx.drawText(fileName, 5, middle + (fontHeight * 2) * (index - selectedFile))
+		gfx.drawText(fileName, data.xMargin, middle + (fontHeight * 2) * (index - selectedFile))
 	end
 end
 
@@ -47,9 +47,20 @@ function init()
 		drawMenu()
 	end)
 
-	bookmarks = pd.datastore.read("bookmarks")
-	if not bookmarks then
-		bookmarks = {}
+	data = pd.datastore.read()
+	if not data then
+		data = {}
+		data.xMargin = 5
+		data.yMargin = 5
+		data.crankSpeed = 2
+		data.dPadSpeed = 100
+		local bookmarks = pd.datastore.read("bookmarks")
+		if bookmarks then
+			data.bookmarks = bookmarks
+			pd.datastore.delete("bookmarks")
+		else
+			data.bookmarks = {}
+		end
 	end
 
 	local allFiles = pd.file.listFiles("/")
@@ -70,7 +81,7 @@ function drawText()
 		endIndex = #text
 	end
 	for index = textIndex, endIndex do
-		gfx.drawText(text[index], 5, textPosition + 5 + (fontHeight + 5) * (index - textIndex))
+		gfx.drawText(text[index], data.xMargin, textPosition + data.yMargin + (fontHeight + data.yMargin) * (index - textIndex))
 	end
 end
 
@@ -78,14 +89,14 @@ function scroll(change)
 	textPosition -= change
 	while textPosition < 0 - fontHeight and textIndex < #text - 8 do
 		textIndex += 1
-		textPosition += fontHeight + 5
+		textPosition += fontHeight + data.yMargin
 	end
 	if textPosition < 0 and textIndex > #text - 9 then
 		textPosition = 0
 	end
 	while textPosition > 0 and textIndex > 1 do
 		textIndex -= 1
-		textPosition -=  fontHeight + 5
+		textPosition -=  fontHeight + data.yMargin
 	end
 	if textPosition > 0 and textIndex == 1 then
 		textPosition = 0
@@ -96,15 +107,15 @@ end
 function pd.update()
 	if state == reading then
 		if pd.buttonIsPressed("up") then
-			scroll(-100 / pd.display.getRefreshRate())
+			scroll(-data.dPadSpeed / pd.display.getRefreshRate())
 		elseif pd.buttonIsPressed("down") then
-			scroll(100 / pd.display.getRefreshRate())
+			scroll(data.dPadSpeed / pd.display.getRefreshRate())
 		end
 	elseif state == loading then
 		if pd.file.exists(files[selectedFile] .. ".json") then
 			text = pd.datastore.read(files[selectedFile])
-			if bookmarks[files[selectedFile]] then
-				textIndex = bookmarks[files[selectedFile]]
+			if data.bookmarks[files[selectedFile]] then
+				textIndex = data.bookmarks[files[selectedFile]]
 			else
 				textIndex = 1
 			end
@@ -155,18 +166,19 @@ function pd.update()
 			line = line:gsub("\xe2\x9d\xaf", "'")
 			table.insert(text, line)
 			gfx.clear(gfx.kColorWhite)
-			gfx.drawText("Loading... " .. #text .. " lines read", 5, middle)
+			gfx.drawText("Loading... " .. #text .. " lines read", data.xMargin, middle)
 			coroutine.yield()
 		end
 		file:close()
 
 		local font <const> = gfx.getFont()
+		local maxWidth <const> = 400 - data.xMargin * 2
 		local index = 1
 		while index <= #text do
-			if font:getTextWidth(text[index]) > 390 then
+			if font:getTextWidth(text[index]) > maxWidth then
 				local line = text[index]
 				for index2 = 1, #line do
-					if font:getTextWidth(line:sub(1, index2)) > 390 then
+					if font:getTextWidth(line:sub(1, index2)) > maxWidth then
 						local spaceIndex = index2
 						while spaceIndex > 1 do
 							if line:sub(spaceIndex, spaceIndex) == " " then
@@ -188,14 +200,14 @@ function pd.update()
 			local percentage = "" .. 100 * index / #text
 			percentage = percentage:sub(1, 5) .. "% processed"
 			gfx.clear(gfx.kColorWhite)
-			gfx.drawText("Loading... " .. percentage, 5, middle)
+			gfx.drawText("Loading... " .. percentage, data.xMargin, middle)
 			index += 1
 			coroutine.yield()
 		end
 		pd.datastore.write(text, files[selectedFile])
 
-		if bookmarks[files[selectedFile]] then
-			textIndex = bookmarks[files[selectedFile]]
+		if data.bookmarks[files[selectedFile]] then
+			textIndex = data.bookmarks[files[selectedFile]]
 		else
 			textIndex = 1
 		end
@@ -209,7 +221,7 @@ end
 
 function pd.cranked(change)
 	if state == reading then
-		scroll(change * 2)
+		scroll(change * data.crankSpeed)
 	end
 end
 
@@ -238,7 +250,7 @@ end
 function pd.AButtonUp()
 	if state == menu then
 		gfx.clear(gfx.kColorWhite)
-		gfx.drawText("Loading...", 5, middle)
+		gfx.drawText("Loading...", data.xMargin, middle)
 		pd.display.flush()
 		state = loading
 	end
@@ -246,8 +258,8 @@ end
 
 function saveBookmark()
 	if state == reading then
-		bookmarks[files[selectedFile]] = textIndex
-		pd.datastore.write(bookmarks, "bookmarks")
+		data.bookmarks[files[selectedFile]] = textIndex
+		pd.datastore.write(data)
 	end
 end
 
