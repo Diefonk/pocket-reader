@@ -92,18 +92,18 @@ end
 
 function scroll(change)
 	textPosition -= change
-	while textPosition < 0 - fontHeight and textIndex <= textEnd.index do
+	while textIndex < textEnd.index and textPosition < 0 - fontHeight do
 		textIndex += 1
 		textPosition += fontHeight + data.yMargin
 	end
 	if textIndex == textEnd.index and textPosition < textEnd.position then
 		textPosition = textEnd.position
 	end
-	while textPosition > 0 and textIndex > 1 do
+	while textIndex > 1 and textPosition > 0 do
 		textIndex -= 1
 		textPosition -=  fontHeight + data.yMargin
 	end
-	if textPosition > 0 and textIndex == 1 then
+	if textIndex == 1 and textPosition > 0 then
 		textPosition = 0
 	end
 	drawText()
