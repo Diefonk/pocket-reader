@@ -13,9 +13,11 @@ local files = {}
 local selectedFile = 1
 local fontHeight
 local middle
+local linesToDraw
 local text
 local textIndex
 local textPosition
+local textEnd = {}
 
 function drawMenu()
 	gfx.clear(gfx.kColorWhite)
@@ -27,7 +29,7 @@ function drawMenu()
 		if index == selectedFile then
 			fileName = "*" .. fileName .. "*"
 		end
-		gfx.drawText(fileName, data.xMargin, middle + (fontHeight * 2) * (index - selectedFile))
+		gfx.drawText(fileName, data.xMargin, middle + (fontHeight + data.yMargin) * (index - selectedFile))
 	end
 end
 
@@ -62,6 +64,9 @@ function init()
 			data.bookmarks = {}
 		end
 	end
+	linesToDraw = math.ceil(240 / (fontHeight + data.yMargin))
+	textEnd.offset = math.floor((240 - data.yMargin) / (fontHeight + data.yMargin)) - 1
+	textEnd.position = 240 - data.yMargin - (textEnd.offset + 1) * (fontHeight + data.yMargin)
 
 	local allFiles = pd.file.listFiles("/")
 	for index = 1, #allFiles do
@@ -76,7 +81,7 @@ end
 
 function drawText()
 	gfx.clear(gfx.kColorWhite)
-	local endIndex = textIndex + 11
+	local endIndex = textIndex + linesToDraw
 	if #text < endIndex then
 		endIndex = #text
 	end
@@ -87,12 +92,12 @@ end
 
 function scroll(change)
 	textPosition -= change
-	while textPosition < 0 - fontHeight and textIndex < #text - 8 do
+	while textPosition < 0 - fontHeight and textIndex <= textEnd.index do
 		textIndex += 1
 		textPosition += fontHeight + data.yMargin
 	end
-	if textPosition < 0 and textIndex > #text - 9 then
-		textPosition = 0
+	if textIndex == textEnd.index and textPosition < textEnd.position then
+		textPosition = textEnd.position
 	end
 	while textPosition > 0 and textIndex > 1 do
 		textIndex -= 1
@@ -120,6 +125,10 @@ function pd.update()
 				textIndex = 1
 			end
 			textPosition = 0
+			textEnd.index = #text - textEnd.offset
+			if textEnd.index < 1 then
+				textEnd.index = 1
+			end
 			drawText()
 			state = reading
 			return
@@ -212,6 +221,10 @@ function pd.update()
 			textIndex = 1
 		end
 		textPosition = 0
+		textEnd.index = #text - textEnd.offset
+		if textEnd.index < 1 then
+			textEnd.index = 1
+		end
 		drawText()
 		state = reading
 		pd.setAutoLockDisabled(false)
