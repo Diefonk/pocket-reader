@@ -18,6 +18,7 @@ local text
 local textIndex
 local textPosition
 local textEnd = {}
+local jumpIndex
 
 function drawMenu()
 	gfx.clear(gfx.kColorWhite)
@@ -106,6 +107,7 @@ function scroll(change)
 	if textIndex == 1 and textPosition > 0 then
 		textPosition = 0
 	end
+	jumpIndex = textIndex
 	drawText()
 end
 
@@ -124,6 +126,7 @@ function pd.update()
 			else
 				textIndex = 1
 			end
+			jumpIndex = textIndex
 			textPosition = 0
 			textEnd.index = #text - textEnd.offset
 			if textEnd.index < 1 then
@@ -220,6 +223,7 @@ function pd.update()
 		else
 			textIndex = 1
 		end
+		jumpIndex = textIndex
 		textPosition = 0
 		textEnd.index = #text - textEnd.offset
 		if textEnd.index < 1 then
@@ -257,6 +261,31 @@ function pd.downButtonDown()
 			selectedFile = 1
 		end
 		drawMenu()
+	end
+end
+
+function pd.leftButtonDown()
+	if state == reading then
+		if textIndex > jumpIndex then
+			textIndex = jumpIndex
+		else
+			textIndex = 1
+		end
+		textPosition = 0
+		drawText()
+	end
+end
+
+function pd.rightButtonDown()
+	if state == reading then
+		if textIndex < jumpIndex then
+			textIndex = jumpIndex
+			textPosition = 0
+		else
+			textIndex = textEnd.index
+			textPosition = textEnd.position
+		end
+		drawText()
 	end
 end
 
