@@ -26,9 +26,16 @@ function drawMenu()
 		gfx.drawText("No files found\n\nPut txt-files in Data/net.diefonk.Reader/\nto start reading", data.xMargin, data.yMargin)
 	end
 	for index = 1, #files do
-		local fileName = files[index]:sub(1, #files[index] - #".txt")
+		local fileName = files[index].name:sub(1, #files[index].name - #".txt")
 		if index == selectedFile then
 			fileName = "*" .. fileName .. "*"
+		end
+		fileName = fileName .. " "
+		if files[index].source then
+			fileName = fileName .. "[S]"
+		end
+		if files[index].loaded then
+			fileName = fileName .. "[L]"
 		end
 		gfx.drawText(fileName, data.xMargin, middle + (fontHeight + data.yMargin) * (index - selectedFile))
 	end
@@ -72,9 +79,19 @@ function init()
 	local allFiles = pd.file.listFiles("/")
 	for index = 1, #allFiles do
 		if allFiles[index]:sub(-#".txt") == ".txt" and allFiles[index]:sub(1, 1) ~= "." then
-			table.insert(files, allFiles[index])
-		elseif allFiles[index]:sub(-#".txt.json") == ".txt.json" and not pd.file.exists(allFiles[index]:sub(1, #allFiles[index] - #".json")) then
-			table.insert(files, allFiles[index]:sub(1, #allFiles[index] - #".json"))
+			table.insert(files, { name = allFiles[index], source = true, loaded = false })
+		elseif allFiles[index]:sub(-#".txt.json") == ".txt.json" then
+			local exists = false
+			local name = allFiles[index]:sub(1, #allFiles[index] - #".json")
+			for index2 = 1, #files do
+				if files[index2].name == name then
+					exists = true
+					files[index2].loaded = true
+				end
+			end
+			if not exists then
+				table.insert(files, { name = name, source = false, loaded = true })
+			end
 		end
 	end
 	drawMenu()
@@ -112,8 +129,8 @@ function scroll(change)
 end
 
 function startReading()
-	if data.bookmarks[files[selectedFile]] then
-		textIndex = data.bookmarks[files[selectedFile]]
+	if data.bookmarks[files[selectedFile].name] then
+		textIndex = data.bookmarks[files[selectedFile].name]
 	else
 		textIndex = 1
 	end
@@ -135,15 +152,15 @@ function pd.update()
 			scroll(data.dPadSpeed / pd.display.getRefreshRate())
 		end
 	elseif state == loading then
-		if pd.file.exists(files[selectedFile] .. ".json") then
-			text = pd.datastore.read(files[selectedFile])
+		if files[selectedFile].loaded then
+			text = pd.datastore.read(files[selectedFile].name)
 			startReading()
 			return
 		end
 
 		pd.setAutoLockDisabled(true)
 		pd.display.setRefreshRate(0)
-		local file = pd.file.open(files[selectedFile])
+		local file = pd.file.open(files[selectedFile].name)
 		text = {}
 		while true do
 			local line = file:readline()
@@ -220,7 +237,8 @@ function pd.update()
 			index += 1
 			coroutine.yield()
 		end
-		pd.datastore.write(text, files[selectedFile])
+		pd.datastore.write(text, files[selectedFile].name)
+		files[selectedFile].loaded = true
 
 		startReading()
 		pd.setAutoLockDisabled(false)
@@ -290,9 +308,17 @@ function pd.AButtonUp()
 	end
 end
 
+function pd.BButtonHeld()
+	if state == menu and files[selectedFile].source and files[selectedFile].loaded then
+		pd.datastore.delete(files[selectedFile].name)
+		files[selectedFile].loaded = false
+		drawMenu()
+	end
+end
+
 function saveBookmark()
 	if state == reading then
-		data.bookmarks[files[selectedFile]] = textIndex
+		data.bookmarks[files[selectedFile].name] = textIndex
 		pd.datastore.write(data)
 	end
 end
