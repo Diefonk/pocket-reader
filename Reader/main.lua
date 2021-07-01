@@ -23,7 +23,7 @@ local jumpIndex
 function drawMenu()
 	gfx.clear(gfx.kColorWhite)
 	if #files <= 0 then
-		gfx.drawText("No files found\n\nPut txt-files in Data/net.diefonk.Reader/\nto start reading", data.xMargin, data.yMargin)
+		gfx.drawText("No files found\n\nPut txt-files in *Data/net.diefonk.Reader/*\nto start reading", data.xMargin, data.yMargin)
 	end
 	for index = 1, #files do
 		local fileName = files[index].menuName
@@ -58,11 +58,12 @@ function init()
 
 	data = pd.datastore.read()
 	if not data then
-		data = {}
-		data.xMargin = 5
-		data.yMargin = 5
-		data.crankSpeed = 2
-		data.dPadSpeed = 100
+		data = {
+			xMargin = 5,
+			yMargin = 5,
+			crankSpeed = 2,
+			dPadSpeed = 100
+		}
 		local bookmarks = pd.datastore.read("bookmarks")
 		if bookmarks then
 			data.bookmarks = bookmarks
@@ -82,18 +83,18 @@ function init()
 		elseif allFiles[index]:sub(-#".txt") == ".txt" then
 			table.insert(files, {
 				name = allFiles[index],
-				menuName = allFiles[index]:sub(1, -#".txt" - 1),
+				menuName = allFiles[index]:sub(1, -1 - #".txt"),
 				source = true,
 				loaded = false
 			})
 		elseif allFiles[index]:sub(-#".txt.json") == ".txt.json" then
-			local name = allFiles[index]:sub(1, -#".json" - 1)
+			local name = allFiles[index]:sub(1, -1 - #".json")
 			if files[#files].name == name then
 				files[#files].loaded = true
 			else
 				table.insert(files, {
 					name = name,
-					menuName = name:sub(1, -#".txt" - 1),
+					menuName = name:sub(1, -1 - #".txt"),
 					source = false,
 					loaded = true
 				})
@@ -125,7 +126,7 @@ function scroll(change)
 	end
 	while textIndex > 1 and textPosition > 0 do
 		textIndex -= 1
-		textPosition -=  fontHeight + data.yMargin
+		textPosition -= fontHeight + data.yMargin
 	end
 	if textIndex == 1 and textPosition > 0 then
 		textPosition = 0
@@ -318,6 +319,8 @@ function pd.BButtonHeld()
 	if state == menu and files[selectedFile].source and files[selectedFile].loaded then
 		pd.datastore.delete(files[selectedFile].name)
 		files[selectedFile].loaded = false
+		data.bookmarks[files[selectedFile].name] = 1
+		pd.datastore.write(data)
 		drawMenu()
 	end
 end
