@@ -84,7 +84,7 @@ function init()
 		end
 	end
 	linesToDraw = math.ceil(240 / (fontHeight + data.yMargin))
-	textEnd.offset = math.floor((240 - data.yMargin) / (fontHeight + data.yMargin)) - 1
+	textEnd.offset = math.floor((240 - data.yMargin) / (fontHeight + data.yMargin))
 	textEnd.position = 240 - data.yMargin - (textEnd.offset + 1) * (fontHeight + data.yMargin)
 
 	local allFiles = pd.file.listFiles("/")
@@ -327,7 +327,7 @@ function changeYMargin(change)
 		data.yMargin = 50
 	end
 	linesToDraw = math.ceil(240 / (fontHeight + data.yMargin))
-	textEnd.offset = math.floor((240 - data.yMargin) / (fontHeight + data.yMargin)) - 1
+	textEnd.offset = math.floor((240 - data.yMargin) / (fontHeight + data.yMargin))
 	textEnd.position = 240 - data.yMargin - (textEnd.offset + 1) * (fontHeight + data.yMargin)
 	textEnd.index = #text - textEnd.offset
 	if textEnd.index < 1 then
