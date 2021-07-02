@@ -1,17 +1,22 @@
 import "CoreLibs/graphics"
+import "CoreLibs/timer"
 
 local pd <const> = playdate
 local gfx <const> = pd.graphics
+local tmr <const> = pd.timer
 
 local menu <const> = 1
 local reading <const> = 2
 local loading <const> = 3
+local editSpeed <const> = 4
+local editMargin <const> = 5
 
 local state = menu
 local data
 local files = {}
 local selectedFile = 1
 local fontHeight
+local fontHalf
 local middle
 local text
 local textIndex
@@ -19,6 +24,7 @@ local textPosition
 local linesToDraw
 local textEnd = {}
 local jumpIndex
+local buttonTimer
 
 function drawMenu()
 	gfx.clear(gfx.kColorWhite)
@@ -50,8 +56,13 @@ function init()
 	gfx.setFontFamily(fontFamily)
 	fontHeight = fontFamily[gfx.font.kVariantNormal]:getHeight()
 	middle = 120 - fontHeight / 2
+	fontHalf = fontHeight / 2
+	gfx.setColor(gfx.kColorBlack)
 
 	pd.getSystemMenu():addMenuItem("reader menu", function()
+		if buttonTimer then
+			buttonTimer:remove()
+		end
 		state = menu
 		drawMenu()
 	end)
@@ -121,12 +132,18 @@ function scroll(change)
 		textIndex += 1
 		textPosition += fontHeight + data.yMargin
 	end
+	if textIndex > textEnd.index then
+		textIndex = textEnd.index
+	end
 	if textIndex == textEnd.index and textPosition < textEnd.position then
 		textPosition = textEnd.position
 	end
 	while textIndex > 1 and textPosition > 0 do
 		textIndex -= 1
 		textPosition -= fontHeight + data.yMargin
+	end
+	if textIndex < 1 then
+		textIndex = 1
 	end
 	if textIndex == 1 and textPosition > 0 then
 		textPosition = 0
@@ -152,6 +169,7 @@ function startReading()
 end
 
 function pd.update()
+	tmr.updateTimers()
 	if state == reading then
 		if pd.buttonIsPressed("up") then
 			scroll(-data.dPadSpeed / pd.display.getRefreshRate())
@@ -253,6 +271,71 @@ function pd.update()
 	end
 end
 
+function drawSpeed()
+	drawText()
+	gfx.fillRect(0, 240 - fontHeight * 2, 400, fontHeight * 2)
+	gfx.setImageDrawMode(gfx.kDrawModeInverted)
+	gfx.drawText("Crank speed: " .. data.crankSpeed, fontHalf, 240 - fontHalf * 3)
+	gfx.drawText("D-pad speed: " .. data.dPadSpeed, 200 + fontHalf, 240 - fontHalf * 3)
+	gfx.setImageDrawMode(gfx.kDrawModeCopy)
+end
+
+function changeCrankSpeed(change)
+	data.crankSpeed += change
+	if data.crankSpeed < 0.1 then
+		data.crankSpeed = 0.1
+	elseif data.crankSpeed > 20 then
+		data.crankSpeed = 20
+	end
+	drawSpeed()
+end
+
+function changeDPadSpeed(change)
+	data.dPadSpeed += change
+	if data.dPadSpeed < 10 then
+		data.dPadSpeed = 10
+	elseif data.dPadSpeed > 1000 then
+		data.dPadSpeed = 1000
+	end
+	drawSpeed()
+end
+
+function drawMargin()
+	drawText()
+	gfx.fillRect(0, 240 - fontHeight * 2, 400, fontHeight * 2)
+	gfx.setImageDrawMode(gfx.kDrawModeInverted)
+	gfx.drawText("X-margin: " .. data.xMargin, fontHalf, 240 - fontHalf * 3)
+	gfx.drawText("Y-margin: " .. data.yMargin, 200 + fontHalf, 240 - fontHalf * 3)
+	gfx.setImageDrawMode(gfx.kDrawModeCopy)
+end
+
+function changeXMargin(change)
+	data.xMargin += change
+	if data.xMargin < 0 then
+		data.xMargin = 0
+	elseif data.xMargin > 50 then
+		data.xMargin = 50
+	end
+	drawMargin()
+end
+
+function changeYMargin(change)
+	data.yMargin += change
+	if data.yMargin < 0 then
+		data.yMargin = 0
+	elseif data.yMargin > 50 then
+		data.yMargin = 50
+	end
+	linesToDraw = math.ceil(240 / (fontHeight + data.yMargin))
+	textEnd.offset = math.floor((240 - data.yMargin) / (fontHeight + data.yMargin)) - 1
+	textEnd.position = 240 - data.yMargin - (textEnd.offset + 1) * (fontHeight + data.yMargin)
+	textEnd.index = #text - textEnd.offset
+	if textEnd.index < 1 then
+		textEnd.index = 1
+	end
+	drawMargin()
+end
+
 function pd.cranked(change)
 	if state == reading then
 		scroll(change * data.crankSpeed)
@@ -267,6 +350,16 @@ function pd.upButtonDown()
 			selectedFile = #files
 		end
 		drawMenu()
+	elseif state == editSpeed then
+		if buttonTimer then
+			buttonTimer:remove()
+		end
+		buttonTimer = tmr.keyRepeatTimer(changeDPadSpeed, 10)
+	elseif state == editMargin then
+		if buttonTimer then
+			buttonTimer:remove()
+		end
+		buttonTimer = tmr.keyRepeatTimer(changeYMargin, 1)
 	end
 end
 
@@ -278,6 +371,16 @@ function pd.downButtonDown()
 			selectedFile = 1
 		end
 		drawMenu()
+	elseif state == editSpeed then
+		if buttonTimer then
+			buttonTimer:remove()
+		end
+		buttonTimer = tmr.keyRepeatTimer(changeDPadSpeed, -10)
+	elseif state == editMargin then
+		if buttonTimer then
+			buttonTimer:remove()
+		end
+		buttonTimer = tmr.keyRepeatTimer(changeYMargin, -1)
 	end
 end
 
@@ -290,6 +393,16 @@ function pd.leftButtonDown()
 		end
 		textPosition = 0
 		drawText()
+	elseif state == editSpeed then
+		if buttonTimer then
+			buttonTimer:remove()
+		end
+		buttonTimer = tmr.keyRepeatTimer(changeCrankSpeed, -0.1)
+	elseif state == editMargin then
+		if buttonTimer then
+			buttonTimer:remove()
+		end
+		buttonTimer = tmr.keyRepeatTimer(changeXMargin, -1)
 	end
 end
 
@@ -303,6 +416,54 @@ function pd.rightButtonDown()
 			textPosition = textEnd.position
 		end
 		drawText()
+	elseif state == editSpeed then
+		if buttonTimer then
+			buttonTimer:remove()
+		end
+		buttonTimer = tmr.keyRepeatTimer(changeCrankSpeed, 0.1)
+	elseif state == editMargin then
+		if buttonTimer then
+			buttonTimer:remove()
+		end
+		buttonTimer = tmr.keyRepeatTimer(changeXMargin, 1)
+	end
+end
+
+function pd.upButtonUp()
+	if buttonTimer then
+		buttonTimer:remove()
+	end
+end
+
+function pd.downButtonUp()
+	if buttonTimer then
+		buttonTimer:remove()
+	end
+end
+
+function pd.leftButtonUp()
+	if buttonTimer then
+		buttonTimer:remove()
+	end
+end
+
+function pd.rightButtonUp()
+	if buttonTimer then
+		buttonTimer:remove()
+	end
+end
+
+function pd.AButtonDown()
+	if state == reading then
+		state = editSpeed
+		drawSpeed()
+	end
+end
+
+function pd.BButtonDown()
+	if state == reading then
+		state = editMargin
+		drawMargin()
 	end
 end
 
@@ -312,6 +473,24 @@ function pd.AButtonUp()
 		gfx.drawText("Loading...", data.xMargin, middle)
 		pd.display.flush()
 		state = loading
+	elseif state == editSpeed then
+		if buttonTimer then
+			buttonTimer:remove()
+		end
+		pd.datastore.write(data)
+		state = reading
+		drawText()
+	end
+end
+
+function pd.BButtonUp()
+	if state == editMargin then
+		if buttonTimer then
+			buttonTimer:remove()
+		end
+		pd.datastore.write(data)
+		state = reading
+		scroll(0)
 	end
 end
 
