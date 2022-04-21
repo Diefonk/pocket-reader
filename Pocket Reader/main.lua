@@ -29,7 +29,7 @@ local buttonTimer
 function drawMenu()
 	gfx.clear(gfx.kColorWhite)
 	if #files <= 0 then
-		gfx.drawText("No files found\n\nPut txt-files in *Data/net.diefonk.Reader/*\nto start reading", data.xMargin, data.yMargin)
+		gfx.drawText("No files found\n\nPut txt-files in\n*Data/net.diefonk.PocketReader/*\nto start reading", data.xMargin, data.yMargin)
 	end
 	for index = 1, #files do
 		local fileName = files[index].menuName

@@ -1,5 +1,5 @@
-name=Reader
+name=Pocket Reader
 author=Diefonk
-bundleID=net.diefonk.Reader
+bundleID=net.diefonk.PocketReader
 version=0.3
 imagePath=cover
