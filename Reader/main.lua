@@ -121,8 +121,9 @@ function drawText()
 	if #text < endIndex then
 		endIndex = #text
 	end
+	local font <const> = gfx.getFont()
 	for index = textIndex, endIndex do
-		gfx.drawText(text[index], data.xMargin, textPosition + data.yMargin + (fontHeight + data.yMargin) * (index - textIndex))
+		font:drawText(text[index], data.xMargin, textPosition + data.yMargin + (fontHeight + data.yMargin) * (index - textIndex))
 	end
 end
 
