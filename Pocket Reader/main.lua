@@ -73,15 +73,14 @@ function init()
 			xMargin = 5,
 			yMargin = 5,
 			crankSpeed = 2,
-			dPadSpeed = 100
+			dPadSpeed = 100,
+			bookmarks = {}
 		}
-		local bookmarks = pd.datastore.read("bookmarks")
-		if bookmarks then
-			data.bookmarks = bookmarks
-			pd.datastore.delete("bookmarks")
-		else
-			data.bookmarks = {}
-		end
+		local readme = pd.file.open("README")
+		local readmetxt = pd.file.open("README.txt", pd.file.kFileWrite)
+		readmetxt:write(readme:read(10000))
+		readme:close()
+		readmetxt:close()
 	end
 	linesToDraw = math.ceil(240 / (fontHeight + data.yMargin))
 	textEnd.offset = math.floor((240 - data.yMargin) / (fontHeight + data.yMargin))
