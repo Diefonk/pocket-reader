@@ -223,9 +223,11 @@ function pd.update()
 			line = line:gsub("\xe2\x9d\xae", "'")
 			line = line:gsub("\xe2\x9d\xaf", "'")
 			table.insert(text, line)
-			gfx.clear(gfx.kColorWhite)
-			gfx.drawText("Loading... " .. #text .. " lines read", data.xMargin, middle)
-			coroutine.yield()
+			if not pd.isSimulator then
+				gfx.clear(gfx.kColorWhite)
+				gfx.drawText("Loading... " .. #text .. " lines read", data.xMargin, middle)
+				coroutine.yield()
+			end
 		end
 		file:close()
 
