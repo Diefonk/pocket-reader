@@ -99,7 +99,7 @@ function init()
 			})
 		elseif allFiles[index]:sub(-#".txt.json") == ".txt.json" then
 			local name = allFiles[index]:sub(1, -1 - #".json")
-			if files[#files].name == name then
+			if #files > 0 and files[#files].name == name then
 				files[#files].loaded = true
 			else
 				table.insert(files, {
