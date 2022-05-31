@@ -49,8 +49,7 @@ end
 function init()
 	local fontPaths = {
 		[gfx.font.kVariantNormal] = "Sasser-Slab",
-		[gfx.font.kVariantBold] = "Sasser-Slab-Bold",
-		[gfx.font.kVariantItalic] = "Sasser-Slab-Italic"
+		[gfx.font.kVariantBold] = "Sasser-Slab-Bold"
 	}
 	local fontFamily = gfx.font.newFamily(fontPaths)
 	gfx.setFontFamily(fontFamily)
@@ -185,6 +184,7 @@ function pd.update()
 
 		pd.setAutoLockDisabled(true)
 		pd.display.setRefreshRate(0)
+		pd.resetElapsedTime()
 		local file = pd.file.open(files[selectedFile].name)
 		text = {}
 		while true do
@@ -193,7 +193,8 @@ function pd.update()
 				break
 			end
 			table.insert(text, line)
-			if not pd.isSimulator then
+			if pd.getElapsedTime() > 1 then
+				pd.resetElapsedTime()
 				gfx.clear(gfx.kColorWhite)
 				gfx.drawText("Loading... " .. #text .. " lines read", data.xMargin, middle)
 				coroutine.yield()
@@ -232,7 +233,10 @@ function pd.update()
 			gfx.clear(gfx.kColorWhite)
 			gfx.drawText("Loading... " .. percentage, data.xMargin, middle)
 			index += 1
-			coroutine.yield()
+			if not pd.isSimulator or pd.getElapsedTime() > 1 then
+				pd.resetElapsedTime()
+				coroutine.yield()
+			end
 		end
 		pd.datastore.write(text, files[selectedFile].name)
 		files[selectedFile].loaded = true
