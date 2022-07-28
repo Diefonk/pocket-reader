@@ -25,6 +25,7 @@ local linesToDraw
 local textEnd = {}
 local jumpIndex
 local buttonTimer
+local leftRight <const> = { "start/end", "page up/down", "nothing" }
 
 function drawMenu()
 	gfx.clear(gfx.kColorWhite)
@@ -73,7 +74,8 @@ function init()
 			yMargin = 5,
 			crankSpeed = 2,
 			dPadSpeed = 100,
-			bookmarks = {}
+			bookmarks = {},
+			leftRight = leftRight[1]
 		}
 		local readme = pd.file.open("README")
 		local readmetxt = pd.file.open("README.txt", pd.file.kFileWrite)
@@ -84,6 +86,14 @@ function init()
 	linesToDraw = math.ceil(240 / (fontHeight + data.yMargin))
 	textEnd.offset = math.floor((240 - data.yMargin) / (fontHeight + data.yMargin))
 	textEnd.position = 240 - data.yMargin - (textEnd.offset + 1) * (fontHeight + data.yMargin)
+
+	if not data.leftRight then
+		data.leftRight = leftRight[1]
+	end
+	pd.getSystemMenu():addOptionsMenuItem("<->", leftRight, data.leftRight, function(value)
+		data.leftRight = value
+		pd.datastore.write(data)
+	end)
 
 	local allFiles = pd.file.listFiles("/")
 	for index = 1, #allFiles do
@@ -362,13 +372,17 @@ end
 
 function pd.leftButtonDown()
 	if state == reading then
-		if textIndex > jumpIndex then
-			textIndex = jumpIndex
-		else
-			textIndex = 1
+		if data.leftRight == leftRight[1] then
+			if textIndex > jumpIndex then
+				textIndex = jumpIndex
+			else
+				textIndex = 1
+			end
+			textPosition = 0
+			drawText()
+		elseif data.leftRight == leftRight[2] then
+			scroll(fontHeight - 240)
 		end
-		textPosition = 0
-		drawText()
 	elseif state == editSpeed then
 		if buttonTimer then
 			buttonTimer:remove()
@@ -384,14 +398,18 @@ end
 
 function pd.rightButtonDown()
 	if state == reading then
-		if textIndex < jumpIndex then
-			textIndex = jumpIndex
-			textPosition = 0
-		else
-			textIndex = textEnd.index
-			textPosition = textEnd.position
+		if data.leftRight == leftRight[1] then
+			if textIndex < jumpIndex then
+				textIndex = jumpIndex
+				textPosition = 0
+			else
+				textIndex = textEnd.index
+				textPosition = textEnd.position
+			end
+			drawText()
+		elseif data.leftRight == leftRight[2] then
+			scroll(240 - fontHeight)
 		end
-		drawText()
 	elseif state == editSpeed then
 		if buttonTimer then
 			buttonTimer:remove()

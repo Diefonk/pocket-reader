@@ -10,6 +10,6 @@ Menu controls:
 
 Reading controls:
 * Crank or d-pad up/down to scroll.
-* D-pad left/right to jump to beginning/end of file.
+* D-pad left/right to jump between start/end/current position, or scroll one page up/down, or nothing. Set which of these three you want in the System Menu.
 * A button held to edit scroll speeds. D-pad left/right to edit crank speed, and up/down to edit d-pad speed.
 * B button held to edit margins. D-pad left/right to edit x-margin, and up/down to edit y-margin. Y-margin will be displayed immediately. X-margin left will also be displayed immediately, but the file needs to be re-loaded (delete loaded version and open again) for the right margin to update.
