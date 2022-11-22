@@ -13,8 +13,9 @@ local editMargin <const> = 5
 
 local state = menu
 local data
-local files = {}
-local selectedFile = 1
+local directory = "/"
+local files
+local selectedFile
 local fontHeight
 local fontHalf
 local middle
@@ -45,6 +46,48 @@ function drawMenu()
 		end
 		gfx.drawText(fileName, data.xMargin, middle + (fontHeight + data.yMargin) * (index - selectedFile))
 	end
+end
+
+function loadFiles()
+	files = {}
+	if directory ~= "/" then
+		local endIndex = directory:sub(1, -2):find("/[^/]*$")
+		table.insert(files, {
+			name = directory:sub(1, endIndex),
+			menuName = "<- back",
+			directory = true
+		})
+	end
+	local allFiles = pd.file.listFiles(directory)
+	for index = 1, #allFiles do
+		if allFiles[index]:sub(-#".txt") == ".txt" then
+			table.insert(files, {
+				name = directory .. allFiles[index],
+				menuName = allFiles[index]:sub(1, -1 - #".txt"),
+				source = true,
+				loaded = false
+			})
+		elseif allFiles[index]:sub(-#".txt.json") == ".txt.json" then
+			local name = directory .. allFiles[index]:sub(1, -1 - #".json")
+			if #files > 0 and files[#files].name == name then
+				files[#files].loaded = true
+			else
+				table.insert(files, {
+					name = name,
+					menuName = name:sub(1, -1 - #".txt"),
+					source = false,
+					loaded = true
+				})
+			end
+		elseif allFiles[index]:sub(-#"/") == "/" then
+			table.insert(files, {
+				name = directory .. allFiles[index],
+				menuName = allFiles[index],
+				directory = true
+			})
+		end
+	end
+	selectedFile = 1
 end
 
 function init()
@@ -95,31 +138,7 @@ function init()
 		pd.datastore.write(data)
 	end)
 
-	local allFiles = pd.file.listFiles("/")
-	for index = 1, #allFiles do
-		if allFiles[index]:sub(1, 1) == "." then
-			--nothing
-		elseif allFiles[index]:sub(-#".txt") == ".txt" then
-			table.insert(files, {
-				name = allFiles[index],
-				menuName = allFiles[index]:sub(1, -1 - #".txt"),
-				source = true,
-				loaded = false
-			})
-		elseif allFiles[index]:sub(-#".txt.json") == ".txt.json" then
-			local name = allFiles[index]:sub(1, -1 - #".json")
-			if #files > 0 and files[#files].name == name then
-				files[#files].loaded = true
-			else
-				table.insert(files, {
-					name = name,
-					menuName = name:sub(1, -1 - #".txt"),
-					source = false,
-					loaded = true
-				})
-			end
-		end
-	end
+	loadFiles()
 	drawMenu()
 end
 
@@ -463,10 +482,16 @@ end
 
 function pd.AButtonUp()
 	if state == menu then
-		gfx.clear(gfx.kColorWhite)
-		gfx.drawText("Loading...", data.xMargin, middle)
-		pd.display.flush()
-		state = loading
+		if files[selectedFile].directory then
+			directory = files[selectedFile].name
+			loadFiles()
+			drawMenu()
+		else
+			gfx.clear(gfx.kColorWhite)
+			gfx.drawText("Loading...", data.xMargin, middle)
+			pd.display.flush()
+			state = loading
+		end
 	elseif state == editSpeed then
 		if buttonTimer then
 			buttonTimer:remove()
