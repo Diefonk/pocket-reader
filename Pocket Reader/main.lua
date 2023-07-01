@@ -544,6 +544,17 @@ end
 
 function pd.gameWillPause()
 	saveBookmark()
+	if state == reading then
+		local menuImage = gfx.image.new(400, 240, gfx.kColorWhite)
+		gfx.pushContext(menuImage)
+		local menuText = files[selectedFile].menuName .. "\n\n"
+		menuText = menuText .. math.floor(textIndex / textEnd.index * 1000) / 10 .. "%"
+		gfx.drawTextInRect(menuText, data.xMargin, data.yMargin, 200 - data.xMargin * 2, 240 - data.yMargin * 2)
+		gfx.popContext()
+		pd.setMenuImage(menuImage)
+	else
+		pd.setMenuImage(nil)
+	end
 end
 
 init()
