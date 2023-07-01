@@ -79,6 +79,8 @@ function loadFiles()
 					loaded = true
 				})
 			end
+		elseif allFiles[index] == "pocketreaderimages/" then
+			--ignore
 		elseif allFiles[index]:sub(-#"/") == "/" then
 			table.insert(files, {
 				name = directory .. allFiles[index],
