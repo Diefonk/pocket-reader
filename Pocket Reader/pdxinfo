@@ -1,6 +1,6 @@
 name=Pocket Reader
 author=Diefonk
 bundleID=net.diefonk.PocketReader
-version=1.4
-buildNumber=5
-imagePath=cover
+version=1.5
+buildNumber=6
+imagePath=launcher
