@@ -137,8 +137,27 @@ function init()
 		data.leftRight = value
 		pd.datastore.write(data)
 	end)
+	if not data.reopen then
+		data.reopen = false
+	end
+	pd.getSystemMenu():addCheckmarkMenuItem("reopen last", data.reopen, function(value)
+		data.reopen = value
+		pd.datastore.write(data)
+	end)
+	if data.reopen and data.latestDir ~= "" then
+		directory = data.latestDir
+	end
 
 	loadFiles()
+	if data.reopen and data.latestFile ~= "" then
+		for index = 1, #files do
+			if files[index].name == data.latestFile then
+				selectedFile = index
+				pd.AButtonUp()
+				return
+			end
+		end
+	end
 	drawMenu()
 end
 
@@ -526,6 +545,17 @@ end
 function saveBookmark()
 	if state == reading then
 		data.bookmarks[files[selectedFile].name] = textIndex
+		if data.reopen then
+			data.latestFile = files[selectedFile].name
+			data.latestDir = directory
+		else
+			data.latestFile = ""
+			data.latestDir = ""
+		end
+		pd.datastore.write(data)
+	else
+		data.latestFile = ""
+		data.latestDir = ""
 		pd.datastore.write(data)
 	end
 end
