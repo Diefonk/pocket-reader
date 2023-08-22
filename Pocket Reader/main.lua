@@ -242,6 +242,7 @@ function pd.update()
 			if not line then
 				break
 			end
+			line = line:gsub("\t", "    ")
 			table.insert(text, line)
 			if pd.getElapsedTime() > 1 then
 				pd.resetElapsedTime()
