@@ -1,7 +1,7 @@
 Put TXT files in Data/net.diefonk.PocketReader/ to start reading.
 Connect your Playdate to your computer and hold d-pad left + Lock button + Menu button to put it in data disk mode, so you can access the data folder.
 
-When opening a file for the first time it will take some time to load it, but subsequent times it will open faster. A JSON file is generated in the data folder, and is what gets loaded later. For large files it is recommended that you load them once in the Playdate Simulator, and then put the resulting JSON file on your Playdate, as this will be much faster. Files that have been loaded once are displayed with [L] when selected in the menu. Those files no longer need the source file in the data folder. Files that still have the source file in the data folder are displayed with [S] when selected in the menu.
+When opening a file for the first time it will take some time to load it, but subsequent times it will open faster. A JSON file is generated in the data folder, and is what gets loaded later. For large files it is recommended that you use the web loader tool at diefonk.itch.io/pocket-reader, and then put the resulting JSON file on your Playdate (make sure the file name ends with .txt.json), as this will be much faster. Files that have been loaded once are displayed with [L] when selected in the menu. Those files no longer need the source file in the data folder. Files that still have the source file in the data folder are displayed with [S] when selected in the menu.
 
 Menu controls:
 * D-pad up/down to make selection.

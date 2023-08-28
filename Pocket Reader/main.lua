@@ -36,7 +36,9 @@ function drawMenu()
 	for index = 1, #files do
 		local fileName = files[index].menuName
 		if index == selectedFile then
-			fileName = "*" .. fileName .. "* "
+			gfx.fillRect(0, middle - data.yMargin / 2, 400, fontHeight + data.yMargin)
+			gfx.setImageDrawMode(gfx.kDrawModeInverted)
+			fileName = fileName .. " "
 			if files[index].source then
 				fileName = fileName .. "[S]"
 			end
@@ -45,6 +47,7 @@ function drawMenu()
 			end
 		end
 		gfx.drawText(fileName, data.xMargin, middle + (fontHeight + data.yMargin) * (index - selectedFile))
+		gfx.setImageDrawMode(gfx.kDrawModeCopy)
 	end
 end
 
@@ -68,12 +71,12 @@ function loadFiles()
 				loaded = false
 			})
 		elseif allFiles[index]:sub(-#".txt.json") == ".txt.json" then
-			local name = directory .. allFiles[index]:sub(1, -1 - #".json")
-			if #files > 0 and files[#files].name == name then
+			local name = allFiles[index]:sub(1, -1 - #".json")
+			if #files > 0 and files[#files].name == directory .. name then
 				files[#files].loaded = true
 			else
 				table.insert(files, {
-					name = name,
+					name = directory .. name,
 					menuName = name:sub(1, -1 - #".txt"),
 					source = false,
 					loaded = true
@@ -94,8 +97,7 @@ end
 
 function init()
 	local fontPaths = {
-		[gfx.font.kVariantNormal] = "Sasser-Slab",
-		[gfx.font.kVariantBold] = "Sasser-Slab-Bold"
+		[gfx.font.kVariantNormal] = "Sasser-Slab"
 	}
 	local fontFamily = gfx.font.newFamily(fontPaths)
 	gfx.setFontFamily(fontFamily)
