@@ -10,7 +10,10 @@
 		<label for="file">File</label><br>
 		<input id="file" type="file" accept=".txt"><br><br>
 		<label for="margin">X-margin</label><br>
-		<input id="margin" type="number" value="5" min="0" max="50"><br><br>
-		<button onclick="load()">Load</button>
+		<input id="margin" type="number" value="5" min="0" max="50" step="1"><br><br>
+		<button onclick="load()">Load</button><br><br>
+		<p>
+			When opening a file in Pocket Reader for the first time it will take some time to load it, but subsequent times it will open faster. A JSON file is generated in the data folder, and is what gets loaded later. For large files it is recommended that you use this web loader tool, and then put the resulting JSON file on your Playdate (make sure the file name ends with .txt.json), as this will be much faster.
+		</p>
 	</body>
 </html>

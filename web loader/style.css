@@ -7,7 +7,7 @@
 	margin: 0;
 	box-sizing: border-box;
 }
-body {
+html {
 	padding: 16px;
 }
 input, button {
@@ -18,7 +18,7 @@ html, input, button {
 	background-color: #b1aea8;
 }
 html {
-	height: 100%;
+	min-height: 100%;
 }
 input {
 	max-width: 100%;
